@@ -1,5 +1,6 @@
 from collections import defaultdict
 from . import coaverage
+from .rho_adjust import resid_gap, rescale_rho_duals
 
 import numpy as np
 
@@ -57,6 +58,7 @@ def admm_step(proxes, xbar, us, rho):
     r,s = residuals(xs, xbar, xbarold, rho)
 
     # adjust rho?
+
         
     return xbar, us, r, s
 
@@ -69,6 +71,8 @@ def admm(proxes, rho, steps=10):
     
     for _ in range(steps):
         xbar, us, r, s = admm_step(proxes, xbar, us, rho)
+        scale = constant(r,s)#resid_gap(r,s)
+        rho, us = rescale_rho_duals(rho, us, scale)
         rs += [r]
         ss += [s]
     
