@@ -79,6 +79,9 @@ def max_util(a,b,phi):
     return maxbpb*cash
 
 def all_max_utils(A,B,phi):
+    """ Get max utility at the current log-prices, phi,
+    for each agent.
+    """
     m,n = A.shape
     utils = []
     for i in range(m):
@@ -171,4 +174,20 @@ def make_sharing_prox(total):
         return xout, None
     
     return foo
+
+def make_displeasure_hook(A,B):
+    def displeasure_hook(xbar):
+        dist_x = [(*k,v) for k,v in xbar.items() if isinstance(k,tuple)]
+        dist_x = sorted(dist_x)
+        dist_x = [x[2] for x in dist_x]
+        x = np.array(dist_x)
+        phi = xbar['phi']
+
+        x = clean_x(x,B)
+
+        return sum(displeasure(A,B,x,phi))
+
+    return displeasure_hook
+    
+
         

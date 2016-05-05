@@ -116,14 +116,14 @@ def admm_step(proxes, xbar, us, rho, info_hook=None, mapper=None):
         
     return xbar, us, rho, step_info
 
-def admm(proxes, rho, steps=10):
+def admm(proxes, rho, steps=10, info_hook=None):
     xbar = defaultdict(float)
     us = [defaultdict(float) for _ in proxes]
 
     infos = []
 
     for _ in range(steps):
-        xbar, us, rho, step_info = admm_step(proxes, xbar, us, rho)
+        xbar, us, rho, step_info = admm_step(proxes, xbar, us, rho, info_hook=info_hook)
     
         infos += [step_info]
     
@@ -156,6 +156,11 @@ def get_residuals(infos):
     s = [info['s'] for info in infos]
 
     return r, s
+
+def get_info(infos, *names):
+    out = (tuple(info[n] for n in names) for info in infos)
+
+    return unzip(out)
 
 def plot_resid(r,s):
     n = len(r)
