@@ -138,7 +138,7 @@ def make_prox(a,b,agent):
         d = {}
         d[(agent,'x')] = x
         d['phi'] = phi
-        return d
+        return d, None
 
     return prox
     
@@ -169,7 +169,7 @@ def make_sharing_prox(total):
         for (agent, key), value in x.items():
             xout[(agent,key)] = x[(agent,key)] - xarrow[key]
         
-        return xout
+        return xout, None
     
     return foo
         

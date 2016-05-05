@@ -1,6 +1,7 @@
 from collections import defaultdict
 from . import coaverage
-from .rho_adjust import resid_gap, rescale_rho_duals
+from .rho_adjust import resid_gap, constant, rescale_rho_duals
+from .timer import Timer
 
 import numpy as np
 
@@ -8,6 +9,23 @@ import matplotlib.pyplot as plt
 
 """ the admm algo won't know anything about shared keys.
 That happens entirely in the fusion center prox function.
+"""
+
+"""
+Proxes have the form:
+
+x, info = prox(x0, rho)
+
+where x, x0 are dictionaries with the keys and values
+the prox cares about. Proxes should be able to handle
+an empty input dict, which would correspond to the proper 0 element.
+To do this, they need to know the keys and datashapes they expect to work on.
+
+proxes may maintain state to exploit caching and warm-starting.
+
+info can be {} or None, returning specific solver information, or other
+information about the prox computation.
+
 """
 
 def make_xin(xbar, u):
@@ -37,46 +55,103 @@ def update_u(u, x, xbar):
         u[k] = u[k] + x[k] - xbar[k]
         
         
-def admm_step(proxes, xbar, us, rho):
-    # prep the input to the prox
-    xins = [make_xin(xbar, u) for u in us]
-    
-    # then we prox
-    xs = [prox(xin, rho) for xin, prox in zip(xins, proxes)]
-    
-    # then we compute xbar
-    xbarold = xbar
-    xbar = coaverage.average(xs)
-    
-    # then we update the us
-    for u,x in zip(us,xs):
-        update_u(u,x,xbar)
-        
-    # maybe de-mean the us
+def admm_step(proxes, xbar, us, rho, info_hook=None):
+    """ Does one ADMM iteration
+    - x_i = prox(xbar - u_i)
+    - u_i = u_i + x_i _ xbar
 
-    # compute residuals, update iteration info
-    r,s = residuals(xs, xbar, xbarold, rho)
+    Returns:
+    xbar
+    us
+    info: dict with info, including residuals and timing
 
-    # adjust rho?
+    """
+    step_info = {}
+    step_info['rho'] = rho
+
+    with Timer(step_info, 'total_step'):
+        # prep the input to the prox
+        with Timer(step_info, 'x_in'):
+            xins = [make_xin(xbar, u) for u in us]
 
         
-    return xbar, us, r, s
+        # then we prox
+        # total time
+        # custom info from the proxes
+        # built in timing info on each prox
+        with Timer(step_info, 'total_proxes'):
+            out = [prox(xin, rho) for xin, prox in zip(xins, proxes)]
+            xs = [item[0] for item in out]
+            step_info['prox_infos'] = [item[1] for item in out]
+        
+        with Timer(step_info, 'xbar'):
+            # then we compute xbar
+            xbarold = xbar
+            xbar = coaverage.average(xs)
+        
+        with Timer(step_info, 'us'):
+            # then we update the us
+            for u,x in zip(us,xs):
+                update_u(u,x,xbar)
+            
+        # maybe de-mean the us
+
+        with Timer(step_info, 'resid'):
+            # compute residuals, update iteration info
+            r,s = residuals(xs, xbar, xbarold, rho)
+            step_info['r'] = r
+            step_info['s'] = s
+
+        # adjust rho?
+        with Timer(step_info, 'rho_scaling'):
+            rho, us, step_info = do_scaling(step_info, us)
+
+        if info_hook:
+            with Timer(step_info, 'info_hook'):
+                step_info['info_hook'] = info_hook(xbar)
+        
+    return xbar, us, rho, step_info
 
 def admm(proxes, rho, steps=10):
     xbar = defaultdict(float)
     us = [defaultdict(float) for _ in proxes]
 
-    rs = []
-    ss = []
-    
+    infos = []
+
     for _ in range(steps):
-        xbar, us, r, s = admm_step(proxes, xbar, us, rho)
-        scale = constant(r,s)#resid_gap(r,s)
-        rho, us = rescale_rho_duals(rho, us, scale)
-        rs += [r]
-        ss += [s]
+        xbar, us, rho, step_info = admm_step(proxes, xbar, us, rho)
     
-    return xbar, rs, ss
+        infos += [step_info]
+    
+    return xbar, infos
+
+
+def do_scaling(step_info, us):
+    """ Rescale rho (and the us)
+    as a result of the residual information (r,s)
+    in `step_info`, and the stored rho value in
+    `step_info`.
+
+    Modify in place the step_info dict,
+    but return it just to make explicit that
+    it may be modified
+    """
+    r,s = step_info['r'], step_info['s']
+    rho = step_info['rho']
+    scale = constant(r,s)#resid_gap(r,s)
+
+    
+    if scale != 1.0:
+        step_info['scale_rho_by'] = scale
+        rho, us = rescale_rho_duals(rho, us, scale)
+
+    return rho, us, step_info
+
+def get_residuals(infos):
+    r = [info['r'] for info in infos]
+    s = [info['s'] for info in infos]
+
+    return r, s
 
 def plot_resid(r,s):
     n = len(r)
