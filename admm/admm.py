@@ -2,6 +2,8 @@ from collections import defaultdict
 from . import coaverage
 from .rho_adjust import resid_gap, constant, rescale_rho_duals
 from .timer import Timer
+import time
+from .functional import map_apply, unzip
 
 import numpy as np
 
@@ -53,9 +55,9 @@ def update_u(u, x, xbar):
     Modifies u. returns nothing."""
     for k in x:
         u[k] = u[k] + x[k] - xbar[k]
+
         
-        
-def admm_step(proxes, xbar, us, rho, info_hook=None):
+def admm_step(proxes, xbar, us, rho, info_hook=None, mapper=None):
     """ Does one ADMM iteration
     - x_i = prox(xbar - u_i)
     - u_i = u_i + x_i _ xbar
@@ -80,9 +82,11 @@ def admm_step(proxes, xbar, us, rho, info_hook=None):
         # custom info from the proxes
         # built in timing info on each prox
         with Timer(step_info, 'total_proxes'):
-            out = [prox(xin, rho) for xin, prox in zip(xins, proxes)]
-            xs = [item[0] for item in out]
-            step_info['prox_infos'] = [item[1] for item in out]
+            #out = [prox(xin, rho) for xin, prox in zip(xins, proxes)]
+            out, step_info['times']['proxes'] = map_apply(proxes, xins,
+                                                          rep_args=[rho],
+                                                          mapper=mapper)
+            xs, step_info['prox_infos'] = unzip(out)
         
         with Timer(step_info, 'xbar'):
             # then we compute xbar

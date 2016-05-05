@@ -146,7 +146,6 @@ def second(item):
     return item[1]
 
     
-#input total = {'x': np.array()}
 def make_sharing_prox(total):
     """ total is a dict of the keys and total values interested
     
