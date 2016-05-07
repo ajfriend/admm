@@ -1,6 +1,6 @@
 from collections import defaultdict
 from . import coaverage
-from .rho_adjust import resid_gap, constant, rescale_rho_duals
+from .rho_adjust import rescale_rho_duals
 from .timer import Timer
 import time
 from .functional import map_apply, unzip
@@ -27,8 +27,9 @@ proxes may maintain state to exploit caching and warm-starting.
 
 info can be {} or None, returning specific solver information, or other
 information about the prox computation.
-
 """
+
+# todo: add a selector for the rho adjustment
 
 def make_xin(xbar, u):
     """ Make the input to the prox function, xbar-u
@@ -57,7 +58,7 @@ def update_u(u, x, xbar):
         u[k] = u[k] + x[k] - xbar[k]
 
         
-def admm_step(proxes, xbar, us, rho, info_hook=None, mapper=None):
+def admm_step(proxes, xbar, us, rho, info_hook=None, mapper=None, rho_adj=None):
     """ Does one ADMM iteration
     - x_i = prox(xbar - u_i)
     - u_i = u_i + x_i _ xbar
@@ -108,7 +109,7 @@ def admm_step(proxes, xbar, us, rho, info_hook=None, mapper=None):
 
         # adjust rho?
         with Timer(step_info, 'rho_scaling'):
-            rho, us, step_info = do_scaling(step_info, us)
+            rho, us, step_info = do_scaling(rho_adj, step_info, us)
 
         if info_hook:
             with Timer(step_info, 'info_hook'):
@@ -116,21 +117,21 @@ def admm_step(proxes, xbar, us, rho, info_hook=None, mapper=None):
         
     return xbar, us, rho, step_info
 
-def admm(proxes, rho, steps=10, info_hook=None):
+def admm(proxes, rho, steps=10, info_hook=None, rho_adj=None):
     xbar = defaultdict(float)
     us = [defaultdict(float) for _ in proxes]
 
     infos = []
 
     for _ in range(steps):
-        xbar, us, rho, step_info = admm_step(proxes, xbar, us, rho, info_hook=info_hook)
+        xbar, us, rho, step_info = admm_step(proxes, xbar, us, rho, info_hook=info_hook, rho_adj=rho_adj)
     
         infos += [step_info]
     
     return xbar, infos
 
 
-def do_scaling(step_info, us):
+def do_scaling(scale_func, step_info, us):
     """ Rescale rho (and the us)
     as a result of the residual information (r,s)
     in `step_info`, and the stored rho value in
@@ -142,7 +143,11 @@ def do_scaling(step_info, us):
     """
     r,s = step_info['r'], step_info['s']
     rho = step_info['rho']
-    scale = constant(r,s)#resid_gap(r,s)
+
+    if scale_func:
+        scale = scale_func(r,s)
+    else:
+        scale = 1.0
 
     
     if scale != 1.0:

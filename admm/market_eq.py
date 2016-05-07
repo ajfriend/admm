@@ -185,9 +185,9 @@ def make_displeasure_hook(A,B):
 
         x = clean_x(x,B)
 
-        return sum(displeasure(A,B,x,phi))
+        return max(displeasure(A,B,x,phi))
 
     return displeasure_hook
-    
+
 
         

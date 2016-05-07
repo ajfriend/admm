@@ -1,5 +1,21 @@
 import time
 from contextlib import contextmanager
+from collections import namedtuple
+
+class Elapsed:
+    def __init__(self, time):
+        self.time = time
+
+
+@contextmanager
+def SimpleTimer():
+    elapsed = Elapsed(None)
+    start = time.time()
+    try:
+        yield elapsed
+    finally:
+        end = time.time()
+        elapsed.time = end-start
 
 
 @contextmanager
