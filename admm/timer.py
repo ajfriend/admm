@@ -1,6 +1,5 @@
 import time
 from contextlib import contextmanager
-from collections import namedtuple
 
 class Elapsed:
     def __init__(self, time):
