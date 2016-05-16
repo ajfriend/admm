@@ -57,6 +57,12 @@ class ADMM:
 
 
     def plot_resid(self):
+        r,s = get_info(self.infos, 'r', 's')
+        n = len(r)
+        plt.semilogy(range(n), r, range(n), s)
+        plt.legend(['r', 's'])
+
+    def plot_resid_info(self):
         r,s, disp = get_info(self.infos, 'r', 's', 'info_hook')
         n = len(r)
         plt.semilogy(range(n), r, range(n), s, range(n), disp)
