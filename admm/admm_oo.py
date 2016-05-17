@@ -8,9 +8,9 @@ from .rho_adjust import make_resid_gap
 
 
 class ADMM:
-    def __init__(self, proxes, rho, mapper=None, info_hook=None, rho_adj=None):
+    def __init__(self, proxes, rho, mapper=None, hook=None, rho_adj=None):
         self.mapper = mapper
-        self.info_hook = info_hook
+        self.hook = hook
 
         if rho_adj is None:
             rho_adj = make_resid_gap(5.0,2.0)
@@ -33,7 +33,7 @@ class ADMM:
                                 self.xbar,
                                 self.us,
                                 self.rho,
-                                info_hook=self.info_hook,
+                                hook=self.hook,
                                 mapper=self.mapper,
                                 rho_adj=self.rho_adj)   
 
@@ -63,10 +63,10 @@ class ADMM:
         plt.legend(['r', 's'])
 
     def plot_resid_info(self):
-        r,s, disp = get_info(self.infos, 'r', 's', 'info_hook')
+        r,s, disp = get_info(self.infos, 'r', 's', 'hook')
         n = len(r)
         plt.semilogy(range(n), r, range(n), s, range(n), disp)
-        plt.legend(['r', 's', 'info_hook'])
+        plt.legend(['r', 's', 'hook'])
 
 
 

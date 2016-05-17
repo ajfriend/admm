@@ -58,7 +58,7 @@ def update_u(u, x, xbar):
         u[k] = u[k] + x[k] - xbar[k]
 
         
-def admm_step(proxes, xbar, us, rho, info_hook=None, mapper=None, rho_adj=None):
+def admm_step(proxes, xbar, us, rho, hook=None, mapper=None, rho_adj=None):
     """ Does one ADMM iteration
     - x_i = prox(xbar - u_i)
     - u_i = u_i + x_i _ xbar
@@ -111,20 +111,20 @@ def admm_step(proxes, xbar, us, rho, info_hook=None, mapper=None, rho_adj=None):
         with Timer(step_info, 'rho_scaling'):
             rho, us, step_info = do_scaling(rho_adj, step_info, us)
 
-        if info_hook:
-            with Timer(step_info, 'info_hook'):
-                step_info['info_hook'] = info_hook(xbar)
+        if hook:
+            with Timer(step_info, 'hook'):
+                step_info['hook'] = hook(xbar)
         
     return xbar, us, rho, step_info
 
-def admm(proxes, rho, steps=10, info_hook=None, rho_adj=None):
+def admm(proxes, rho, steps=10, hook=None, rho_adj=None):
     xbar = defaultdict(float)
     us = [defaultdict(float) for _ in proxes]
 
     infos = []
 
     for _ in range(steps):
-        xbar, us, rho, step_info = admm_step(proxes, xbar, us, rho, info_hook=info_hook, rho_adj=rho_adj)
+        xbar, us, rho, step_info = admm_step(proxes, xbar, us, rho, hook=hook, rho_adj=rho_adj)
     
         infos += [step_info]
     
