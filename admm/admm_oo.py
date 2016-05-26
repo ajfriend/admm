@@ -13,7 +13,7 @@ class ADMM:
         self.hook = hook
 
         if rho_adj is None:
-            rho_adj = make_resid_gap(5.0,2.0)
+            rho_adj = make_resid_gap()
 
         self.rho_adj = rho_adj
 
@@ -26,7 +26,7 @@ class ADMM:
 
         self.timed_runs = []
 
-    def step(self, num_steps=1, verbose=False):
+    def step(self, num_steps=1):
         with SimpleTimer() as elapsed:
             for _ in range(num_steps):
                 out = admm_step(self.proxes,
@@ -43,8 +43,6 @@ class ADMM:
 
         runtime = elapsed.time
         self.timed_runs += [ (num_steps, runtime) ]
-        if verbose:
-            print('{} ADMM steps took {:.2f} seconds'.format(num_steps,runtime))
 
     @property
     def total_time(self):

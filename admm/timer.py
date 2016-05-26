@@ -27,3 +27,12 @@ def Timer(d, label):
         if 'times' not in d:
             d['times'] = {}
         d['times'][label] = end-start
+
+@contextmanager
+def PrintTimer(label):
+    start = time.time()
+    try:
+        yield 
+    finally:
+        end = time.time()
+        print('{}: {}'.format(label, end-start))

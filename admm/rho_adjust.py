@@ -12,6 +12,9 @@ def make_resid_gap(gap=10.0, rho_adj=2.0, tol=1e-3):
     mu = gap
     tau = rho_adj
 
+    if tol is None:
+        tol = 0
+
     def resid_gap(r, s):
         scale = 1.0
 

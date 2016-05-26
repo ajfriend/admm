@@ -1,13 +1,19 @@
 from collections import defaultdict
 from . import coaverage
 from .rho_adjust import rescale_rho_duals
-from .timer import Timer
-import time
+from .timer import Timer, PrintTimer
+
 from .functional import map_apply, unzip
 
 import numpy as np
 
 import matplotlib.pyplot as plt
+
+# there is some weird startup cost to this call.
+# it was throwing off timing, making the first calculation of residuals
+# seemingly take longer than needed.
+# calling it once here removes the extra overhead. super weird...
+np.linalg.norm([0,.1])
 
 """ the admm algo won't know anything about shared keys.
 That happens entirely in the fusion center prox function.
