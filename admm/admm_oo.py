@@ -1,15 +1,16 @@
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib.pyplot as plt
 
 from .admm import admm_step, get_info
 from .timer import SimpleTimer
 from .rho_adjust import make_resid_gap
+from .report import report_solve
 
 
 class ADMM:
-    def __init__(self, proxes, rho, mapper=None, hook=None, rho_adj=None):
-        self.mapper = mapper
+    def __init__(self, proxes, rho, rho_adj=None, hook=None, threads=None):
         self.hook = hook
 
         if rho_adj is None:
@@ -26,6 +27,8 @@ class ADMM:
 
         self.timed_runs = []
 
+        self.set_threads(threads)
+
     def step(self, num_steps=1):
         with SimpleTimer() as elapsed:
             for _ in range(num_steps):
@@ -34,7 +37,7 @@ class ADMM:
                                 self.us,
                                 self.rho,
                                 hook=self.hook,
-                                mapper=self.mapper,
+                                mapper=self._mapper,
                                 rho_adj=self.rho_adj)   
 
                 self.xbar, self.us, self.rho, step_info = out     
@@ -52,19 +55,14 @@ class ADMM:
 
         return time
 
+    def report(self, figsize=(12,6), verbose=False):
+        report_solve(self.infos, figsize=figsize, verbose=verbose)
 
-
-    def plot_resid(self):
-        r,s = get_info(self.infos, 'r', 's')
-        n = len(r)
-        plt.semilogy(range(n), r, range(n), s)
-        plt.legend(['r', 's'])
-
-    def plot_resid_info(self):
-        r,s, disp = get_info(self.infos, 'r', 's', 'hook')
-        n = len(r)
-        plt.semilogy(range(n), r, range(n), s, range(n), disp)
-        plt.legend(['r', 's', 'hook'])
-
+    def set_threads(self, threads):
+        if threads is None or threads == 0:
+            self._mapper = map
+        else:
+            ex = ThreadPoolExecutor(threads)
+            self._mapper = ex.map
 
 

@@ -152,12 +152,8 @@ def do_scaling(scale_func, step_info, us):
 
     if scale_func:
         scale = scale_func(r,s)
-    else:
-        scale = 1.0
 
-    
     if scale != 1.0:
-        step_info['scale_rho_by'] = scale
         rho, us = rescale_rho_duals(rho, us, scale)
 
     return rho, us, step_info
