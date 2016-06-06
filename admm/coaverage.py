@@ -72,10 +72,10 @@ def coaverage(offset=None, key_transform=None):
                 count[k] += 1
                 avg = None
 
-def average(iterable):
+def average(iterable, offset=None):
     """ take in an iterable of dictionaries. average along keys.
     """
-    avg = coaverage()
+    avg = coaverage(offset=offset)
     for item in iterable:
         avg.send(item)
 

@@ -10,6 +10,13 @@ from .report import report_solve
 
 
 class ADMM:
+    """ Maintains state of ADMM iteration.
+
+    xbar, us maintain global and local ADMM state.
+    proxes maintains the list of prox functions
+    infos is the ADMM status info for each iteration
+    timed_runs gives the runtime for each chunk of runs
+    """
     def __init__(self, proxes, rho, rho_adj=None, hook=None, threads=None):
         self.hook = hook
 
@@ -30,6 +37,8 @@ class ADMM:
         self.set_threads(threads)
 
     def step(self, num_steps=1):
+        """ Perform `num_steps` ADMM steps and log results.
+        """
         with SimpleTimer() as elapsed:
             for _ in range(num_steps):
                 out = admm_step(self.proxes,
@@ -55,8 +64,8 @@ class ADMM:
 
         return time
 
-    def report(self, figsize=(12,6), verbose=False):
-        report_solve(self.infos, figsize=figsize, verbose=verbose)
+    def report(self, figsize=(12,6), hook=False, verbose=False):
+        report_solve(self.infos, figsize=figsize, verbose=verbose, hook=hook)
 
     def set_threads(self, threads):
         if threads is None or threads == 0:

@@ -16,6 +16,17 @@ def SimpleTimer():
         end = time.time()
         elapsed.time = end-start
 
+@contextmanager
+def DictTimer(label='time', d=None):
+    if d is None:
+        d = {}
+    start = time.time()
+    try:
+        yield d
+    finally:
+        end = time.time()
+        d[label] = end-start
+
 
 @contextmanager
 def Timer(d, label):
