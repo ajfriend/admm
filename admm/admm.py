@@ -3,7 +3,7 @@ from . import coaverage
 from .rho_adjust import rescale_rho_duals
 from .timer import Timer, PrintTimer
 
-from .functional import map_apply, unzip
+from .functional import map_apply, unzip, fast_avg
 
 import numpy as np
 
@@ -98,7 +98,8 @@ def admm_step(proxes, xbar, us, rho, hook=None, mapper=None, rho_adj=None):
         with Timer(step_info, 'xbar'):
             # then we compute xbar
             xbarold = xbar
-            xbar = coaverage.average(xs)
+            #xbar = coaverage.average(xs)
+            xbar = fast_avg(xs)
         
         with Timer(step_info, 'us'):
             # then we update the us
@@ -174,15 +175,31 @@ def plot_resid(r,s):
     plt.semilogy(range(n), r, range(n), s)
     plt.legend(['r', 's'])
 
-def residuals(xs, xbar, xbarold, rho):
+def general_residuals(xs, xbar, xbarold, rho):
+    npnorm = np.linalg.norm
     r = 0.0
     s = 0.0
 
     for x in xs:
-        for k in x:
-            r += np.linalg.norm(x[k] - xbar[k])**2
-            s += np.linalg.norm(xbar[k] - xbarold[k])**2
+        for k,v in x.items():
+            xbark = xbar[k]
+            r += npnorm(v - xbark)**2
+            s += npnorm(xbark - xbarold[k])**2
 
     return np.sqrt(r), rho*np.sqrt(s)
+
+def float_residuals(xs, xbar, xbarold, rho):
+    r = 0.0
+    s = 0.0
+
+    for x in xs:
+        for k,v in x.items():
+            xbark = xbar[k]
+            r += (v - xbark)**2
+            s += (xbark - xbarold[k])**2
+
+    return np.sqrt(r), rho*np.sqrt(s)
+
+residuals = float_residuals
 
 

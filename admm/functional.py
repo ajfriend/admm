@@ -1,5 +1,6 @@
 import time
 from itertools import repeat
+from collections import defaultdict
 
 def map_apply(funcs, *iterables, rep_args=None, mapper=None):
     """ Apply each func to each iterable input argument.
@@ -37,4 +38,21 @@ def unzip(seq):
     """
     out = zip(*seq)
     out = tuple(list(i) for i in out)
+    return out
+
+def fast_avg(xs):
+    """ Compute the average by key over the list of dictionaries, xs.
+    """
+    total = defaultdict(float)
+    count = defaultdict(int)
+    
+    for x in xs:
+        for k,v in x.items():
+            count[k] += 1
+            total[k] += v
+                
+    out = {}
+    for k,v in count.items():
+        out[k] = total[k]/v
+            
     return out
