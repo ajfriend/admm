@@ -4,7 +4,7 @@ from admm.tests.iter_times import agent_dict, make_dummy_prox
 
 import numpy as np
 
-p = 2
+p = 5
 threads = None
 filename = 'test_time.json'
 
