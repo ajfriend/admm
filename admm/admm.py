@@ -1,5 +1,4 @@
 from collections import defaultdict
-from . import coaverage
 from .rho_adjust import rescale_rho_duals
 from .timer import Timer, PrintTimer
 
@@ -8,6 +7,8 @@ from .functional import map_apply, unzip, fast_avg
 import numpy as np
 
 import matplotlib.pyplot as plt
+
+from numbers import Number
 
 # there is some weird startup cost to this call.
 # it was throwing off timing, making the first calculation of residuals
@@ -98,7 +99,6 @@ def admm_step(proxes, xbar, us, rho, hook=None, mapper=None, rho_adj=None):
         with Timer(step_info, 'xbar'):
             # then we compute xbar
             xbarold = xbar
-            #xbar = coaverage.average(xs)
             xbar = fast_avg(xs)
         
         with Timer(step_info, 'us'):
@@ -176,6 +176,10 @@ def plot_resid(r,s):
     plt.legend(['r', 's'])
 
 def general_residuals(xs, xbar, xbarold, rho):
+    """ Compute the residuals for floats or numpy arrays.
+    Suffers heavy overhead from np.linalg.norm in the case of all the
+    data being floats.
+    """
     npnorm = np.linalg.norm
     r = 0.0
     s = 0.0
@@ -188,7 +192,40 @@ def general_residuals(xs, xbar, xbarold, rho):
 
     return np.sqrt(r), rho*np.sqrt(s)
 
+def general_residuals2(xs, xbar, xbarold, rho):
+    """ Reduces the overhead from `general_residuals()`,
+    but not as much as `float_residuals()`.
+    """
+
+    npnorm = np.linalg.norm
+    r = 0.0
+    s = 0.0
+
+    for x in xs:
+        for k,v in x.items():
+            xbark = xbar[k]
+
+            rval = v - xbark
+            sval = xbark - xbarold[k]
+
+            if isinstance(rval, Number):
+                r += (rval)**2
+                s += (sval)**2
+            else:
+                r += npnorm(rval)**2
+                s += npnorm(sval)**2
+
+    return np.sqrt(r), rho*np.sqrt(s)
+
 def float_residuals(xs, xbar, xbarold, rho):
+    """ Compute the residuals when all the values in the dictionaries
+    are floats (no numpy arrays allowed).
+
+    Much faster than having to call np.linalg.norm, or check if the values
+    are floats.
+
+    XXX: have to update the algorithm to use this by default if eligible
+    """
     r = 0.0
     s = 0.0
 
@@ -200,6 +237,8 @@ def float_residuals(xs, xbar, xbarold, rho):
 
     return np.sqrt(r), rho*np.sqrt(s)
 
+# set the residuals function. float_residuals is fastest (but only OK
+# to use when we know all the variables are floats, and not numpy arrays)
 residuals = float_residuals
 
 

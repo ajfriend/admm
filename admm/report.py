@@ -4,6 +4,39 @@ import numpy as np
 import matplotlib.pyplot as plt
 from toolz import get, get_in
 
+import pandas as pd
+
+def plot_iter_breakdown(infos, iter_nums=None):
+    keys = ['resid', 'rho_scaling', 'total_proxes', 'us', 'x_in', 'xbar']
+    if iter_nums is None:
+        # look at three most-recent iterations
+        iters = [-3, -2,-1]
+
+    rows = []
+
+    for i in iters:
+        out = {key: infos[i]['times'][key] for key in keys}
+        if i >= 0:
+            out['iter'] = i
+        else:
+            out['iter'] = len(infos)+i
+    
+        rows += [out]
+    
+
+    df = pd.DataFrame(rows)
+    df = df.set_index('iter')
+    
+    fig, ax = plt.subplots()
+    ax.set_title('ADMM iteration time breakdown')
+    ax.set_ylabel('seconds')
+    
+
+    df.plot.bar(stacked=True, legend=True, ax=ax)
+    ax.set_xlabel('iteration number')
+    
+    ax.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+
 
 def get_key(infos, *keys, reduce=None, default=None):
     """ Build array of ADMM logging output based on input key(s).
@@ -74,7 +107,8 @@ def report_iters(infos, ax=None):
         ax.yaxis.tick_right()
         ax.yaxis.set_label_position("right")
 
-    ax.plot(a, c='b', alpha=.3, linewidth=2.0)
+    if a: # a might be empty if no prox reports iterations
+        ax.plot(a, c='b', alpha=.3, linewidth=2.0)
     ax.set_ylabel('# prox iters')
     ax.set_title('Prox Iterations')
     
