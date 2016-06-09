@@ -7,6 +7,18 @@ import numpy as np
 import warnings
 import os
 
+from contextlib import contextmanager
+
+@contextmanager
+def catcher():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            yield
+        except RuntimeError:
+            pass
+
+
 
 def test1():
     np.random.seed(0)
@@ -26,10 +38,8 @@ def test1():
 
     admm.step(10)
 
-    admm.iter_breakdown()
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+    with catcher():
+        admm.iter_breakdown()
         admm.report(verbose=True)
 
     filename = '___test1.json'
@@ -39,10 +49,9 @@ def test1():
     admm2, data = load(filename)
 
     assert data['threads'] == threads
-
-    admm2.iter_breakdown()
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+    
+    with catcher():
+        admm2.iter_breakdown()
         admm2.report(verbose=True)
 
     os.remove(filename)
