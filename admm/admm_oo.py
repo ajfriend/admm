@@ -82,6 +82,8 @@ class ADMM:
     def saveinfo(self, filename, extra_data=None):
         # num agents: nope
         data = {}
+
+        data.update(extra_data)
         data['solve_time'] = sum(run[1] for run in self.timed_runs)
         data['infos'] = self.infos
 
