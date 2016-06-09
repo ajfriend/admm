@@ -45,10 +45,9 @@ def test1():
     filename = '___test1.json'
     admm.saveinfo(filename, {'threads': threads})
 
-
     admm2, data = load(filename)
 
-    assert data['threads'] == threads
+    assert data['extra']['threads'] == threads
     
     with catcher():
         admm2.iter_breakdown()

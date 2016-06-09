@@ -7,6 +7,7 @@ from .admm import admm_step, get_info
 from .timer import SimpleTimer
 from .rho_adjust import make_resid_gap
 from .report import report_solve, plot_iter_breakdown
+from .resid import general_residuals, float_residuals
 
 import json
 
@@ -19,7 +20,8 @@ class ADMM:
     infos is the ADMM status info for each iteration
     timed_runs gives the runtime for each chunk of runs
     """
-    def __init__(self, proxes, rho, rho_adj=None, hook=None, threads=None):
+    def __init__(self, proxes, rho, rho_adj=None, hook=None, threads=None,
+                 resid='general'):
         self.hook = hook
 
         if rho_adj is None:
@@ -38,6 +40,13 @@ class ADMM:
 
         self.set_threads(threads)
 
+        if resid == 'general':
+            self._resid = general_residuals
+        elif resid == 'float':
+            self._resid = float_residuals
+        else:
+            raise ValueError('Unrecognized residual calculation method: {}'.format(resid))
+
     def step(self, num_steps=1):
         """ Perform `num_steps` ADMM steps and log results.
         """
@@ -49,7 +58,8 @@ class ADMM:
                                 self.rho,
                                 hook=self.hook,
                                 mapper=self._mapper,
-                                rho_adj=self.rho_adj)   
+                                rho_adj=self.rho_adj,
+                                residuals=self._resid)
 
                 self.xbar, self.us, self.rho, step_info = out     
 
@@ -79,11 +89,10 @@ class ADMM:
             ex = ThreadPoolExecutor(threads)
             self._mapper = ex.map
 
-    def saveinfo(self, filename, extra_data=None):
+    def saveinfo(self, filename, extra=None):
         # num agents: nope
-        data = {}
+        data = dict(extra=extra)
 
-        data.update(extra_data)
         data['solve_time'] = sum(run[1] for run in self.timed_runs)
         data['infos'] = self.infos
 
