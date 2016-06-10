@@ -7,15 +7,15 @@ from toolz import get, get_in
 import pandas as pd
 
 def plot_iter_breakdown(infos, iter_nums=None):
-    keys = ['resid', 'rho_scaling', 'total_proxes', 'us', 'x_in', 'xbar']
+    keys = ['resid', 'rho_scaling', 'total_proxes', 'us', 'x_in', 'xbar', 'hook']
     if iter_nums is None:
         # look at three most-recent iterations
-        iters = [-3, -2,-1]
+        iter_nums = [-3, -2,-1]
 
     rows = []
 
-    for i in iters:
-        out = {key: infos[i]['times'][key] for key in keys}
+    for i in iter_nums:
+        out = {key: infos[i]['times'].get(key,0) for key in keys}
         if i >= 0:
             out['iter'] = i
         else:
@@ -107,7 +107,7 @@ def report_iters(infos, ax=None):
         ax.yaxis.tick_right()
         ax.yaxis.set_label_position("right")
 
-    if a: # a might be empty if no prox reports iterations
+    if not (a is None or len(a) == 0): # a might be empty if no prox reports iterations
         ax.plot(a, c='b', alpha=.3, linewidth=2.0)
     ax.set_ylabel('# prox iters')
     ax.set_title('Prox Iterations')

@@ -11,6 +11,8 @@ from .resid import general_residuals, float_residuals
 
 import json
 
+import numpy as np
+
 
 class ADMM:
     """ Maintains state of ADMM iteration.
@@ -97,7 +99,35 @@ class ADMM:
         data['infos'] = self.infos
 
         with open(filename, "w") as file:
-            json.dump(data, file)  
+            json.dump(data, file)
+
+    def run_until_hook(self, max_iters=5000, tol=1e-3, substeps=100):
+        """ run until hook <= tol
+        """
+        total_steps = 0
+
+        while True:
+            if total_steps >= max_iters:
+                break
+
+            if len(self.infos) > 0:
+                hook_val = self.infos[-1]['hook']
+            else:
+                hook_val = np.inf
+
+            if hook_val <= tol:
+                break
+
+            msg = 'Step: {:6d} Hook: {:8.2e}'.format(total_steps, hook_val)
+            print(msg, end=' ')
+
+            with SimpleTimer() as t:
+                self.step(substeps)
+            print('Time: {:8.2e}'.format(t.time))
+
+            total_steps += substeps
+
+
 
 def load(filename):
     with open(filename, 'r') as file:
