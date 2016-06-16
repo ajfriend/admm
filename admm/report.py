@@ -90,15 +90,7 @@ def get_prox_status(infos):
 
 
 def report_iters(infos, ax=None):
-    # todo: maybe we should put in zero for things without iters, so proxers line up
-    # what about a reporting mode, to summarize?
-    pred = lambda x: x >= 0
-    f = lambda x: list(filter(pred, x))
-    
-    a = get_prox_key(infos, 'iter', default=-1, reduce=f)
-    
-    #a = [iters.max(axis=1), iters.mean(axis=1), iters.min(axis=1)]
-    #a = np.stack(a, axis=1)
+    a = get_prox_key(infos, 'iter', default=0)
 
     if ax is None:
         fig, ax = plt.subplots()
@@ -107,8 +99,7 @@ def report_iters(infos, ax=None):
         ax.yaxis.tick_right()
         ax.yaxis.set_label_position("right")
 
-    if not (a is None or len(a) == 0): # a might be empty if no prox reports iterations
-        ax.plot(a, c='b', alpha=.3, linewidth=2.0)
+    ax.plot(a, c='b', alpha=.3, linewidth=2.0)
     ax.set_ylabel('# prox iters')
     ax.set_title('Prox Iterations')
     
@@ -171,10 +162,10 @@ def report_time(infos, inner=False, ax=None):
 
     if inner:
         a = np.stack([total_step, total_proxes, prox_outers, prox_inners], axis=1)
-        legend = ['full ADMM step', 'prox "map" time', 'sum of prox times', 'self-reported prox times']
+        legend = ['full ADMM step', 'prox "map" time', 'outer prox times', "inner prox times"]
     else:
         a = np.stack([total_step, prox_outers], axis=1)
-        legend = ['full ADMM step', 'sum of prox times']
+        legend = ['full ADMM step', 'outer prox times']
     
     if ax is None:
         fig, ax = plt.subplots()
@@ -213,6 +204,8 @@ def report_prox_time(infos, outer=True, ax=None):
     ax.plot(a, c='b', alpha=.3, linewidth=2.0)
     ax.set_title(title)
     ax.set_ylabel('time (s)')
+
+    return a
 
 def report_solve(infos, figsize=(12,6), hook=False, verbose=False):
     # todo: share the y axis on the bottom row if verbose==True

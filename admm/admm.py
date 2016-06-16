@@ -2,7 +2,7 @@ from collections import defaultdict
 from .rho_adjust import rescale_rho_duals
 from .timer import Timer, PrintTimer
 
-from .functional import map_apply, unzip, fast_avg
+from .functional import map_apply, fast_avg, unpack3
 from .resid import general_residuals, float_residuals
 
 import numpy as np
@@ -64,7 +64,6 @@ def update_u(u, x, xbar):
     Modifies u. returns nothing."""
     for k in x:
         u[k] = u[k] + x[k] - xbar[k]
-
         
 def admm_step(proxes, xbar, us, rho, hook=None, mapper=None, rho_adj=None,
               residuals=general_residuals):
@@ -92,19 +91,14 @@ def admm_step(proxes, xbar, us, rho, hook=None, mapper=None, rho_adj=None,
         # custom info from the proxes
         # built in timing info on each prox
         with Timer(step_info, 'total_proxes'):
-            #out = [prox(xin, rho) for xin, prox in zip(xins, proxes)]
-            out, step_info['times']['proxes'] = map_apply(proxes, xins,
-                                                          rep_args=[rho],
-                                                          mapper=mapper)
-            xs, step_info['prox_infos'] = unzip(out)
+            out = map_apply(proxes, xins, rep_args=[rho], mapper=mapper)
+            xs, step_info['prox_infos'], step_info['times']['proxes'] = unpack3(out)
         
         with Timer(step_info, 'xbar'):
-            # then we compute xbar
             xbarold = xbar
             xbar = fast_avg(xs)
         
         with Timer(step_info, 'us'):
-            # then we update the us
             for u,x in zip(us,xs):
                 update_u(u,x,xbar)
             
@@ -160,19 +154,3 @@ def do_scaling(scale_func, step_info, us):
         rho, us = rescale_rho_duals(rho, us, scale)
 
     return rho, us, step_info
-
-def get_residuals(infos):
-    r = [info['r'] for info in infos]
-    s = [info['s'] for info in infos]
-
-    return r, s
-
-def get_info(infos, *names):
-    out = (tuple(info[n] for n in names) for info in infos)
-
-    return unzip(out)
-
-def plot_resid(r,s):
-    n = len(r)
-    plt.semilogy(range(n), r, range(n), s)
-    plt.legend(['r', 's'])

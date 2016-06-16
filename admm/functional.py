@@ -1,6 +1,7 @@
-import time
 from itertools import repeat
 from collections import defaultdict
+from .timer import SimpleTimer
+
 
 def map_apply(funcs, *iterables, rep_args=None, mapper=None):
     """ Apply each func to each iterable input argument.
@@ -11,6 +12,7 @@ def map_apply(funcs, *iterables, rep_args=None, mapper=None):
     mapper gives the mapping function to use (concurrent.futures).
 
     returns the output results, along with the time for each function call
+    as a list of tuples: [(output1, time1), ...]
     """
 
     if mapper is None:
@@ -21,24 +23,28 @@ def map_apply(funcs, *iterables, rep_args=None, mapper=None):
         rep_args = []
 
     out = mapper(do, funcs, *iterables, *rep_args)
-    results, times = unzip(out)
 
-    return results, times
+    return out
 
 def do(func, *iterables):
-    # todo, put into timing module
-    start = time.time()
-    result =  func(*iterables)
-    total_time = time.time() - start
+    with SimpleTimer() as t:
+        result =  func(*iterables)
 
-    return result, total_time
+    return result, t.time
 
-def unzip(seq):
-    """ Want unzip to return a tuple of lists
+def unpack3(seq):
+    """ Unpacks sequence of form [((a,b),c), ...]
+    as three lists [a1,...], [b1,...], [c1,...]
+
     """
-    out = zip(*seq)
-    out = tuple(list(i) for i in out)
-    return out
+    out1, out2, out3 = [], [], []
+
+    for (a,b),c in seq:
+        out1.append(a)
+        out2.append(b)
+        out3.append(c)
+
+    return out1, out2, out3
 
 def fast_avg(xs):
     """ Compute the average by key over the list of dictionaries, xs.

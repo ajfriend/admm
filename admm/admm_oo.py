@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import matplotlib.pyplot as plt
 
-from .admm import admm_step, get_info
+from .admm import admm_step
 from .timer import SimpleTimer
 from .rho_adjust import make_resid_gap
 from .report import report_solve, plot_iter_breakdown
@@ -105,27 +105,26 @@ class ADMM:
         """ run until hook <= tol
         """
         total_steps = 0
+        header = '{:>6}  {:>8}  {:>8}'.format('Iter', 'Hook', 'Time (s)')
+        print(header)
 
         while True:
             if total_steps >= max_iters:
                 break
 
-            if len(self.infos) > 0:
-                hook_val = self.infos[-1]['hook']
-            else:
-                hook_val = np.inf
-
-            if hook_val <= tol:
-                break
-
-            msg = 'Step: {:6d} Hook: {:8.2e}'.format(total_steps, hook_val)
-            print(msg, end=' ')
+            msg = '{:6d}'.format(total_steps)
+            print(msg, end='')
 
             with SimpleTimer() as t:
                 self.step(substeps)
-            print('Time: {:8.2e}'.format(t.time))
+
+            hook_val = self.infos[-1]['hook']
+            print('  {:8.2e}  {:8.2e}'.format(hook_val, t.time))
 
             total_steps += substeps
+
+            if hook_val <= tol:
+                break
 
 
 

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from .timer import SimpleTimer
 
 
 def sharing_prox(x, B):
@@ -52,7 +53,9 @@ def form_sharing_prox(B):
     def foo(x0=None, rho=1):
         if x0 is None:
             x0 = {}
-        x = sharing_prox(x0, B)
+
+        with SimpleTimer() as t:
+            x = sharing_prox(x0, B)
         
-        return x, None
+        return x, dict(time=t.time)
     return foo
