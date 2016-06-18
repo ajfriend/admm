@@ -92,7 +92,14 @@ class ADMM:
             self._mapper = ex.map
 
     def saveinfo(self, filename, extra=None):
-        # num agents: nope
+        """ Save the descriptive stats of the ADMM iteration.
+
+        Parameters
+        ----------
+        extra : dict
+            A dictionary of extra info (possibly about the problem being solved)
+            to save in the output json file.
+        """
         data = dict(extra=extra)
 
         data['solve_time'] = sum(run[1] for run in self.timed_runs)
