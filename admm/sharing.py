@@ -1,6 +1,6 @@
 from collections import defaultdict
 from .timer import SimpleTimer
-
+from .functional import time_info
 
 def sharing_prox(x, B):
     """ Projects shared values in x so that they sum to value in B.
@@ -50,12 +50,10 @@ def sharing_prox(x, B):
 
 def form_sharing_prox(B):
     
+    @time_info
     def foo(x0=None, rho=1):
         if x0 is None:
             x0 = {}
+        return sharing_prox(x0, B)
 
-        with SimpleTimer() as t:
-            x = sharing_prox(x0, B)
-        
-        return x, dict(time=t.time)
     return foo

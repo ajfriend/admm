@@ -1,6 +1,23 @@
 from itertools import repeat
 from collections import defaultdict
-from .timer import SimpleTimer
+from functools import wraps
+
+from .timer import SimpleTimer, DictTimer
+
+"""
+What if this thing already has an info? do we clobber it? overwrite `time`?
+"""
+def time_info(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        with DictTimer('time',) as info:
+            out = f(*args, **kwds)
+        wrapper.info = info
+        return out
+    
+    wrapper.info = {'time': None}
+
+    return wrapper
 
 
 def map_apply(funcs, *iterables, rep_args=None, mapper=None):
@@ -31,20 +48,6 @@ def do(func, *iterables):
         result =  func(*iterables)
 
     return result, t.time
-
-def unpack3(seq):
-    """ Unpacks sequence of form [((a,b),c), ...]
-    as three lists [a1,...], [b1,...], [c1,...]
-
-    """
-    out1, out2, out3 = [], [], []
-
-    for (a,b),c in seq:
-        out1.append(a)
-        out2.append(b)
-        out3.append(c)
-
-    return out1, out2, out3
 
 def fast_avg(xs):
     """ Compute the average by key over the list of dictionaries, xs.

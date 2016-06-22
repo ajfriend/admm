@@ -2,11 +2,11 @@ from collections import defaultdict
 from .rho_adjust import rescale_rho_duals
 from .timer import Timer, PrintTimer
 
-from .functional import map_apply, fast_avg, unpack3
+from .functional import map_apply, fast_avg
 from .resid import general_residuals, float_residuals
 
 import numpy as np
-
+from toolz import keyfilter
 import matplotlib.pyplot as plt
 
 from numbers import Number
@@ -22,9 +22,9 @@ That happens entirely in the fusion center prox function.
 """
 
 """
-Proxes have the form:
+Proxes should be a function (or callable) and have the form:
 
-x, info = prox(x0, rho)
+x = prox(x0, rho, **kwargs)
 
 where x, x0 are dictionaries with the keys and values
 the prox cares about. Proxes should be able to handle
@@ -33,8 +33,16 @@ To do this, they need to know the keys and datashapes they expect to work on.
 
 proxes may maintain state to exploit caching and warm-starting.
 
-info can be {} or None, returning specific solver information, or other
-information about the prox computation.
+Optionally, the prox can provide an info attribute
+`prox.info` which would provide a dictionary of information.
+It is OK for the prox to just be a function with no such attribute.
+If `hasattr(prox, 'info') == False`, the ADMM algorithm will
+just record `None` as the corresponding info.
+
+While `prox.info` can provide arbitrary information, the ADMM
+algorithm will look for keys `time` and `iters`, corresponding
+to the most-recent prox computation time, and (if iterative) the
+number of iterations performed to compute the prox.
 """
 
 # todo: add a selector for the rho adjustment
@@ -64,6 +72,21 @@ def update_u(u, x, xbar):
     Modifies u. returns nothing."""
     for k in x:
         u[k] = u[k] + x[k] - xbar[k]
+
+def get_prox_infos(proxes, keys=None):
+    if keys is None:
+        keys = ['time', 'iter']
+
+    pred = lambda x: x in keys
+
+    out = []
+    for prox in proxes:
+        if hasattr(prox, 'info'):
+            out += [keyfilter(pred, prox.info)]
+        else:
+            out += [None]
+
+    return out
         
 def admm_step(proxes, xbar, us, rho, hook=None, mapper=None, rho_adj=None,
               residuals=general_residuals):
@@ -92,7 +115,10 @@ def admm_step(proxes, xbar, us, rho, hook=None, mapper=None, rho_adj=None,
         # built in timing info on each prox
         with Timer(step_info, 'total_proxes'):
             out = map_apply(proxes, xins, rep_args=[rho], mapper=mapper)
-            xs, step_info['prox_infos'], step_info['times']['proxes'] = unpack3(out)
+            xs, step_info['times']['proxes'] = zip(*out)
+
+        with Timer(step_info, 'prox_infos'):
+            step_info['prox_infos'] = get_prox_infos(proxes)
         
         with Timer(step_info, 'xbar'):
             xbarold = xbar

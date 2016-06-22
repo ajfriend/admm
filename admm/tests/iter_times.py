@@ -1,6 +1,7 @@
 import numpy as np
 from ..timer import SimpleTimer
 from .. import form_sharing_prox
+from ..functional import time_info
 
 def goodfloat(population=100, size=10, offset=0.0, mult=1.0):
     """ Return dict of `size` items, where the items
@@ -39,11 +40,9 @@ def rand_replace_vals(d):
 
 def make_dummy_prox(d):
     
+    @time_info
     def foo(x0, rho):
-        with SimpleTimer() as t:
-            x = rand_replace_vals(d)
-
-        return x, dict(time=t.time)
+        return rand_replace_vals(d)
     
     return foo
 
