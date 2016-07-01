@@ -27,23 +27,23 @@ def sharing_prox(x, B):
     
     """
     
-    B = dict(B)
+    total = defaultdict(float)
     count = defaultdict(int)
     
     for k in x:
         if isinstance(k, tuple):
             a, g = k
             count[g] += 1
-            B[g] -= x[k]
+            total[g] += x[k]
             
     for g in count:
-        B[g] /= count[g]
+        total[g] = (B[g] - total[g])/count[g]
             
     xout = {}
     for k in x:
         if isinstance(k, tuple):
             a,g = k
-            xout[k] = x[k] + B[g]
+            xout[k] = x[k] + total[g]
         
     return xout
 
